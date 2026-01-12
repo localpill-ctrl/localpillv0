@@ -1,65 +1,136 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
+import Button from '@/components/ui/Button';
+import { MapPin, Upload, MessageCircle, Pill } from 'lucide-react';
+
+export default function LandingPage() {
+  const router = useRouter();
+  const { isAuthenticated, user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated && user) {
+      // Redirect to appropriate dashboard
+      if (user.role === 'pharmacy') {
+        router.push('/pharmacy/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [isAuthenticated, user, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <span className="text-2xl font-black tracking-tight">
+            L<span className="text-primary">O</span>CAL
+          </span>
+          <span className="text-2xl font-black tracking-tight">
+            <span className="text-primary">P</span>ILL
+          </span>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => router.push('/login')}>
+          Login
+        </Button>
+      </header>
+
+      {/* Hero Section */}
+      <main className="px-6 pt-12 pb-20">
+        <div className="max-w-lg mx-auto text-center">
+          {/* Hero Icon */}
+          <div className="w-24 h-24 mx-auto mb-8 bg-primary-light rounded-full flex items-center justify-center">
+            <Pill className="w-12 h-12 text-primary-dark" />
+          </div>
+
+          <h1 className="text-4xl font-black mb-4 leading-tight">
+            Your Local Pharmacy,
+            <br />
+            <span className="text-primary-dark">Delivered</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p className="text-gray-500 text-lg mb-8">
+            Upload your prescription or just tell us what you need. We connect
+            you with nearby pharmacies instantly.
           </p>
+
+          <div className="flex flex-col gap-3">
+            <Button size="lg" className="w-full" onClick={() => router.push('/register')}>
+              Get Started
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full"
+              onClick={() => router.push('/register/pharmacy')}
+            >
+              Register as Pharmacy
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {/* How it Works */}
+        <section className="mt-20 max-w-lg mx-auto">
+          <h2 className="text-2xl font-bold text-center mb-8">How it Works</h2>
+
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-primary-light rounded-xl flex items-center justify-center flex-shrink-0">
+                <Upload className="w-6 h-6 text-primary-dark" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Upload or Type</h3>
+                <p className="text-gray-500">
+                  Upload your prescription photo or simply type the medicines you
+                  need.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-primary-light rounded-xl flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-6 h-6 text-primary-dark" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">We Find Pharmacies</h3>
+                <p className="text-gray-500">
+                  Your request is sent to all nearby pharmacies within 2km
+                  instantly.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-primary-light rounded-xl flex items-center justify-center flex-shrink-0">
+                <MessageCircle className="w-6 h-6 text-primary-dark" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Chat & Get Delivered</h3>
+                <p className="text-gray-500">
+                  A pharmacy accepts your order. Chat with them and get your
+                  medicines delivered.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
+
+      {/* Footer */}
+      <footer className="px-6 py-8 border-t border-gray-100 text-center text-gray-400 text-sm">
+        <p>LocalPill - Connecting you to local pharmacies</p>
+      </footer>
     </div>
   );
 }
