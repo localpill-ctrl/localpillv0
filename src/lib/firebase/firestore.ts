@@ -76,13 +76,20 @@ export const subscribeToUser = (
   callback: (user: User | null) => void
 ) => {
   const userRef = doc(db, 'users', uid);
-  return onSnapshot(userRef, (snapshot) => {
-    if (snapshot.exists()) {
-      callback({ uid: snapshot.id, ...snapshot.data() } as User);
-    } else {
+  return onSnapshot(
+    userRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        callback({ uid: snapshot.id, ...snapshot.data() } as User);
+      } else {
+        callback(null);
+      }
+    },
+    (error) => {
+      console.error('Error subscribing to user:', error);
       callback(null);
     }
-  });
+  );
 };
 
 export const setPharmacyOnlineStatus = async (
@@ -135,13 +142,20 @@ export const subscribeToRequest = (
   callback: (request: MedicineRequest | null) => void
 ) => {
   const requestRef = doc(db, 'requests', requestId);
-  return onSnapshot(requestRef, (snapshot) => {
-    if (snapshot.exists()) {
-      callback({ requestId: snapshot.id, ...snapshot.data() } as MedicineRequest);
-    } else {
+  return onSnapshot(
+    requestRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        callback({ requestId: snapshot.id, ...snapshot.data() } as MedicineRequest);
+      } else {
+        callback(null);
+      }
+    },
+    (error) => {
+      console.error('Error subscribing to request:', error);
       callback(null);
     }
-  });
+  );
 };
 
 export const subscribeToCustomerRequests = (
@@ -156,12 +170,19 @@ export const subscribeToCustomerRequests = (
     limit(20)
   );
 
-  return onSnapshot(q, (snapshot) => {
-    const requests = snapshot.docs.map(
-      (doc) => ({ requestId: doc.id, ...doc.data() } as MedicineRequest)
-    );
-    callback(requests);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const requests = snapshot.docs.map(
+        (doc) => ({ requestId: doc.id, ...doc.data() } as MedicineRequest)
+      );
+      callback(requests);
+    },
+    (error) => {
+      console.error('Error subscribing to customer requests:', error);
+      callback([]);
+    }
+  );
 };
 
 export const closeRequest = async (
@@ -327,12 +348,19 @@ export const subscribeToResponses = (
   const responsesRef = collection(db, 'requests', requestId, 'responses');
   const q = query(responsesRef, orderBy('respondedAt', 'asc'));
 
-  return onSnapshot(q, (snapshot) => {
-    const responses = snapshot.docs.map(
-      (doc) => ({ responseId: doc.id, ...doc.data() } as PharmacyResponse)
-    );
-    callback(responses);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const responses = snapshot.docs.map(
+        (doc) => ({ responseId: doc.id, ...doc.data() } as PharmacyResponse)
+      );
+      callback(responses);
+    },
+    (error) => {
+      console.error('Error subscribing to responses:', error);
+      callback([]);
+    }
+  );
 };
 
 export const getPharmacyResponseForRequest = async (
@@ -421,13 +449,20 @@ export const subscribeToChat = (
   callback: (chat: Chat | null) => void
 ) => {
   const chatRef = doc(db, 'chats', chatId);
-  return onSnapshot(chatRef, (snapshot) => {
-    if (snapshot.exists()) {
-      callback({ chatId: snapshot.id, ...snapshot.data() } as Chat);
-    } else {
+  return onSnapshot(
+    chatRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        callback({ chatId: snapshot.id, ...snapshot.data() } as Chat);
+      } else {
+        callback(null);
+      }
+    },
+    (error) => {
+      console.error('Error subscribing to chat:', error);
       callback(null);
     }
-  });
+  );
 };
 
 export const subscribeToMessages = (
@@ -437,12 +472,19 @@ export const subscribeToMessages = (
   const messagesRef = collection(db, 'chats', chatId, 'messages');
   const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
-  return onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map(
-      (doc) => ({ messageId: doc.id, ...doc.data() } as Message)
-    );
-    callback(messages);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const messages = snapshot.docs.map(
+        (doc) => ({ messageId: doc.id, ...doc.data() } as Message)
+      );
+      callback(messages);
+    },
+    (error) => {
+      console.error('Error subscribing to messages:', error);
+      callback([]);
+    }
+  );
 };
 
 export const sendMessage = async (
@@ -514,10 +556,22 @@ export const subscribeToGlobalStats = (
   callback: (stats: GlobalStats) => void
 ) => {
   const statsRef = doc(db, 'stats', 'global');
-  return onSnapshot(statsRef, (snapshot) => {
-    if (snapshot.exists()) {
-      callback(snapshot.data() as GlobalStats);
-    } else {
+  return onSnapshot(
+    statsRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.data() as GlobalStats);
+      } else {
+        callback({
+          totalRequests: 0,
+          totalCustomers: 0,
+          totalPharmacies: 0,
+          activeRequests: 0,
+        });
+      }
+    },
+    (error) => {
+      console.error('Error subscribing to global stats:', error);
       callback({
         totalRequests: 0,
         totalCustomers: 0,
@@ -525,7 +579,7 @@ export const subscribeToGlobalStats = (
         activeRequests: 0,
       });
     }
-  });
+  );
 };
 
 // Get all users for admin
