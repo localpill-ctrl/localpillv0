@@ -1,0 +1,16 @@
+{
+  "name": "LocalPill",
+  "short_name": "LocalPill",
+  "description": "Find medicine near you",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FCD34D",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

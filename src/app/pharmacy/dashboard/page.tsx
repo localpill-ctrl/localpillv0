@@ -29,6 +29,7 @@ import {
   BellOff,
   X,
   Volume2,
+  Phone,
 } from 'lucide-react';
 
 // Play notification sound using Web Audio API
@@ -444,6 +445,18 @@ export default function PharmacyDashboard() {
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
           </div>
         )}
+
+        {/* Customer Support */}
+        <div className="mt-8 p-4 bg-gray-50 rounded-xl text-center">
+          <p className="text-gray-500 text-sm mb-1">Need help?</p>
+          <a
+            href="tel:+919330374330"
+            className="inline-flex items-center gap-2 text-primary-dark font-semibold hover:underline"
+          >
+            <Phone className="w-4 h-4" />
+            +91 93303 74330
+          </a>
+        </div>
       </main>
     </div>
   );
