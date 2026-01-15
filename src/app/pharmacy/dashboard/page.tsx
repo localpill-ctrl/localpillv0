@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -25,7 +25,53 @@ import {
   MapPin,
   Settings,
   History,
+  Bell,
+  BellOff,
 } from 'lucide-react';
+
+// Play notification sound using Web Audio API
+const playNotificationSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    // Create a pleasant notification tone
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Two-tone notification
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+    oscillator.frequency.setValueAtTime(1100, audioContext.currentTime + 0.1); // C#6
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (err) {
+    console.error('Error playing notification sound:', err);
+  }
+};
+
+// Request notification permission
+const requestNotificationPermission = async () => {
+  if ('Notification' in window && Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+};
+
+// Show browser notification
+const showBrowserNotification = (title: string, body: string) => {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, {
+      body,
+      icon: '/logo.png',
+      badge: '/logo.png',
+    });
+  }
+};
 
 export default function PharmacyDashboard() {
   const router = useRouter();
@@ -35,6 +81,11 @@ export default function PharmacyDashboard() {
   const [nearbyRequests, setNearbyRequests] = useState<RequestWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingStatus, setTogglingStatus] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  // Track previous request IDs to detect new ones
+  const previousRequestIds = useRef<Set<string>>(new Set());
+  const isFirstLoad = useRef(true);
 
   // Initialize online status from user profile
   useEffect(() => {
@@ -60,6 +111,13 @@ export default function PharmacyDashboard() {
     }
   };
 
+  // Request notification permission when going online
+  useEffect(() => {
+    if (isOnline) {
+      requestNotificationPermission();
+    }
+  }, [isOnline]);
+
   // Subscribe to nearby requests when online
   useEffect(() => {
     console.log('=== Pharmacy Dashboard Debug ===');
@@ -72,6 +130,9 @@ export default function PharmacyDashboard() {
       console.log('Not subscribing - missing location or offline');
       setNearbyRequests([]);
       setLoading(false);
+      // Reset tracking when going offline
+      previousRequestIds.current = new Set();
+      isFirstLoad.current = true;
       return;
     }
 
@@ -79,13 +140,43 @@ export default function PharmacyDashboard() {
     const pharmacyLng = user.pharmacyProfile.location.lng;
 
     console.log('Subscribing to nearby requests at:', pharmacyLat, pharmacyLng);
-    console.log('Search radius: 2km');
+    console.log('Search radius: 5km');
 
     const unsubscribe = subscribeToNearbyRequests(
       pharmacyLat,
       pharmacyLng,
       async (requests) => {
         console.log('Received requests:', requests.length, requests);
+
+        // Check for new requests (not on first load)
+        if (!isFirstLoad.current && notificationsEnabled) {
+          const currentIds = new Set(requests.map((r) => r.requestId));
+          const newRequests = requests.filter(
+            (r) => !previousRequestIds.current.has(r.requestId)
+          );
+
+          if (newRequests.length > 0) {
+            // Play notification sound
+            playNotificationSound();
+
+            // Show browser notification for each new request
+            newRequests.forEach((request) => {
+              const title = 'New Medicine Request';
+              const body =
+                request.requestType === 'prescription'
+                  ? `${request.customerName} uploaded a prescription`
+                  : `${request.customerName} is looking for: ${request.medicineText?.slice(0, 50) || 'medicine'}`;
+              showBrowserNotification(title, body);
+            });
+          }
+
+          previousRequestIds.current = currentIds;
+        } else {
+          // First load - just store the IDs without notifications
+          previousRequestIds.current = new Set(requests.map((r) => r.requestId));
+          isFirstLoad.current = false;
+        }
+
         // Add distance info and check if already responded
         const requestsWithInfo: RequestWithDistance[] = await Promise.all(
           requests.map(async (request) => {
@@ -119,7 +210,7 @@ export default function PharmacyDashboard() {
     );
 
     return () => unsubscribe();
-  }, [user?.pharmacyProfile?.location, user?.uid, isOnline]);
+  }, [user?.pharmacyProfile?.location, user?.uid, isOnline, notificationsEnabled]);
 
   const handleLogout = async () => {
     if (user && isOnline) {
@@ -157,6 +248,21 @@ export default function PharmacyDashboard() {
             >
               <Power className="w-4 h-4" />
               {isOnline ? 'Online' : 'Offline'}
+            </button>
+            <button
+              onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+              className={`p-2 rounded-full transition-colors ${
+                notificationsEnabled
+                  ? 'bg-primary-light text-primary-dark'
+                  : 'hover:bg-gray-100 text-gray-400'
+              }`}
+              title={notificationsEnabled ? 'Notifications On' : 'Notifications Off'}
+            >
+              {notificationsEnabled ? (
+                <Bell className="w-5 h-5" />
+              ) : (
+                <BellOff className="w-5 h-5" />
+              )}
             </button>
             <button
               onClick={() => router.push('/pharmacy/history')}
