@@ -27,7 +27,7 @@ import {
 } from '@/types';
 import { distanceBetween, geohashQueryBounds } from 'geofire-common';
 
-const BROADCAST_RADIUS_KM = 2; // 2km radius
+const BROADCAST_RADIUS_KM = 5; // 5km radius
 
 // ============ USER OPERATIONS ============
 
@@ -109,7 +109,7 @@ export const createRequest = async (
     ...requestData,
     responseCount: 0,
     createdAt: serverTimestamp(),
-    expiresAt: Timestamp.fromDate(new Date(Date.now() + 60 * 60 * 1000)), // 1 hour
+    expiresAt: Timestamp.fromDate(new Date(Date.now() + 5 * 60 * 1000)), // 5 minutes
   });
 
   console.log('Created request with ID:', docRef.id);

@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Pill,
   FileImage,
+  Settings,
 } from 'lucide-react';
 
 const statusConfig: Record<RequestStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -61,12 +62,20 @@ export default function CustomerDashboard() {
             </h1>
             <p className="text-gray-500 text-sm">Find medicine near you</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <LogOut className="w-5 h-5 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/settings')}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <Settings className="w-5 h-5 text-gray-500" />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <LogOut className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
         </div>
       </header>
 

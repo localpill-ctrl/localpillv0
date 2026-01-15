@@ -23,6 +23,7 @@ import {
   Pill,
   FileImage,
   MapPin,
+  Settings,
 } from 'lucide-react';
 
 export default function PharmacyDashboard() {
@@ -155,6 +156,12 @@ export default function PharmacyDashboard() {
             >
               <Power className="w-4 h-4" />
               {isOnline ? 'Online' : 'Offline'}
+            </button>
+            <button
+              onClick={() => router.push('/pharmacy/settings')}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <Settings className="w-5 h-5 text-gray-500" />
             </button>
             <button
               onClick={handleLogout}

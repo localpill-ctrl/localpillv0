@@ -160,7 +160,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="px-6 py-8 border-t border-gray-100 text-center text-gray-400 text-sm">
-        <p>LocalPill - Find medicine near you</p>
+        <p>Local Pill - Find medicine near you</p>
       </footer>
     </div>
   );

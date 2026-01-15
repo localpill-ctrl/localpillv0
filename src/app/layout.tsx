@@ -14,12 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'LocalPill - Your Local Pharmacy, Delivered',
+  title: 'LocalPill - Find Medicine Near You',
   description:
-    'Connect with local pharmacies near you. Upload prescriptions or request medicines and get them delivered to your doorstep.',
+    'Stop wasting time visiting multiple pharmacies. Find out which nearby pharmacy has your medicine in stock.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo.png',
+    apple: '/logo.png',
   },
 };
 
