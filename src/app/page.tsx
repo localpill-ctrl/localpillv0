@@ -34,14 +34,14 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="px-6 py-4 flex items-center justify-between">
-        <Image
-          src="/logo.png"
-          alt="LocalPill"
-          width={120}
-          height={40}
-          className="h-10 w-auto"
-          priority
-        />
+        <div className="flex items-center gap-1">
+          <span className="text-xl font-black tracking-tight">
+            L<span className="text-primary">O</span>CAL
+          </span>
+          <span className="text-xl font-black tracking-tight">
+            <span className="text-primary">P</span>ILL
+          </span>
+        </div>
         <Button variant="outline" size="sm" onClick={() => router.push('/login')}>
           Login
         </Button>
@@ -50,9 +50,16 @@ export default function LandingPage() {
       {/* Hero Section */}
       <main className="px-6 pt-12 pb-20">
         <div className="max-w-lg mx-auto text-center">
-          {/* Hero Icon */}
-          <div className="w-24 h-24 mx-auto mb-8 bg-primary-light rounded-full flex items-center justify-center">
-            <Search className="w-12 h-12 text-primary-dark" />
+          {/* Hero Logo */}
+          <div className="mx-auto mb-8">
+            <Image
+              src="/logo.png"
+              alt="LocalPill"
+              width={200}
+              height={100}
+              className="h-24 w-auto mx-auto"
+              priority
+            />
           </div>
 
           <h1 className="text-4xl font-black mb-4 leading-tight">
