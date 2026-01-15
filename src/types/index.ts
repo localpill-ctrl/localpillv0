@@ -1,53 +1,37 @@
 import { Timestamp } from 'firebase/firestore';
 
-// Address type
-export interface Address {
-  label: string;
-  street: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-  location: {
-    lat: number;
-    lng: number;
-    geohash: string;
-  };
+// User roles
+export type UserRole = 'customer' | 'pharmacy' | 'admin';
+
+// Location type
+export interface Location {
+  lat: number;
+  lng: number;
+  address: string;
+  geohash: string;
 }
 
-// User roles
-export type UserRole = 'customer' | 'pharmacy';
-
-// Customer profile
+// Customer profile (simplified - just location)
 export interface CustomerProfile {
-  addresses: Address[];
-  defaultAddressIndex: number;
+  location: Location;
 }
 
 // Pharmacy profile
 export interface PharmacyProfile {
   pharmacyName: string;
   licenseNumber: string;
-  address: Address;
-  location: {
-    lat: number;
-    lng: number;
-    geohash: string;
-  };
+  location: Location;
   isVerified: boolean;
   isOnline: boolean;
-  rating: number;
-  totalOrders: number;
 }
 
 // User type
 export interface User {
   uid: string;
-  phone?: string;  // Optional - collected during registration but not verified
+  phone: string;
   email?: string;
   displayName: string;
   role: UserRole;
-  fcmTokens: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
   isActive: boolean;
@@ -55,49 +39,64 @@ export interface User {
   pharmacyProfile?: PharmacyProfile;
 }
 
-// Order status
-export type OrderStatus =
-  | 'pending'
-  | 'accepted'
-  | 'in_progress'
-  | 'out_for_delivery'
-  | 'delivered'
-  | 'cancelled'
-  | 'expired';
+// Request status
+export type RequestStatus = 'active' | 'expired' | 'closed';
 
-// Order request type
+// Request type (prescription or text)
 export type RequestType = 'prescription' | 'text';
 
-// Order type
-export interface Order {
-  orderId: string;
+// Medicine Request (replaces Order)
+export interface MedicineRequest {
+  requestId: string;
   customerId: string;
   customerName: string;
   customerPhone: string;
   requestType: RequestType;
   prescriptionImageUrls?: string[];
-  medicineRequest?: string;
-  notes?: string;
-  deliveryAddress: Address;
-  status: OrderStatus;
-  acceptedBy?: {
-    pharmacyId: string;
-    pharmacyName: string;
-    pharmacyPhone: string;
-    acceptedAt: Timestamp;
-  };
-  chatId?: string;
+  medicineText?: string;
+  location: Location;
+  status: RequestStatus;
   createdAt: Timestamp;
-  updatedAt: Timestamp;
   expiresAt: Timestamp;
-  broadcastRadius: number;
-  notifiedPharmacies: string[];
+  closedAt?: Timestamp;
+  closedReason?: 'expired' | 'manual';
+  // Analytics fields
+  firstResponseAt?: Timestamp;
+  responseCount: number;
 }
 
-// Chat type
+// Availability status
+export type AvailabilityStatus = 'available' | 'not_available';
+
+// Pharmacy Response to a request
+export interface PharmacyResponse {
+  responseId: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  pharmacyPhone: string;
+  pharmacyLocation: Location;
+  distance: number; // in km
+  availability: AvailabilityStatus;
+  respondedAt: Timestamp;
+  chatId?: string; // Created when pharmacy marks available
+}
+
+// Request with responses (for customer view)
+export interface RequestWithResponses extends MedicineRequest {
+  responses: PharmacyResponse[];
+}
+
+// Request with distance (for pharmacy view)
+export interface RequestWithDistance extends MedicineRequest {
+  distance: number;
+  hasResponded?: boolean;
+  myResponse?: PharmacyResponse;
+}
+
+// Chat type (simplified)
 export interface Chat {
   chatId: string;
-  orderId: string;
+  requestId: string;
   participants: {
     customerId: string;
     customerName: string;
@@ -128,7 +127,10 @@ export interface Message {
   readAt?: Timestamp;
 }
 
-// Order with distance (for pharmacy view)
-export interface OrderWithDistance extends Order {
-  distance: number;
+// Global stats (for admin)
+export interface GlobalStats {
+  totalRequests: number;
+  totalCustomers: number;
+  totalPharmacies: number;
+  activeRequests: number;
 }

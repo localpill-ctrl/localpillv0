@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createUser } from '@/lib/firebase/firestore';
-import { calculateGeohash, getCurrentLocation } from '@/lib/utils/geohash';
+import { getCurrentLocationWithAddress } from '@/lib/utils/geohash';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import PhoneInput from '@/components/auth/PhoneInput';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin, CheckCircle } from 'lucide-react';
+import { Location } from '@/types';
 
 export default function CustomerRegistrationPage() {
   const router = useRouter();
@@ -16,11 +17,7 @@ export default function CustomerRegistrationPage() {
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [street, setStreet] = useState('');
-  const [area, setArea] = useState('');
-  const [city, setCity] = useState('');
-  const [pincode, setPincode] = useState('');
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,12 +38,13 @@ export default function CustomerRegistrationPage() {
 
   const handleGetLocation = async () => {
     setLocationLoading(true);
+    setError('');
     try {
-      const loc = await getCurrentLocation();
+      const loc = await getCurrentLocationWithAddress();
       setLocation(loc);
     } catch (err) {
       console.error('Error getting location:', err);
-      setError('Could not get your location. Please enter address manually.');
+      setError('Could not get your location. Please enable location access and try again.');
     } finally {
       setLocationLoading(false);
     }
@@ -65,8 +63,13 @@ export default function CustomerRegistrationPage() {
       return;
     }
 
+    if (!phone.trim()) {
+      setError('Please enter your phone number');
+      return;
+    }
+
     if (!location) {
-      setError('Please allow location access for delivery');
+      setError('Please allow location access');
       return;
     }
 
@@ -74,38 +77,22 @@ export default function CustomerRegistrationPage() {
     setError('');
 
     try {
-      const geohash = calculateGeohash(location.lat, location.lng);
-
       await createUser({
         uid: firebaseUser.uid,
-        phone: phone || undefined,
+        phone: phone,
         email: firebaseUser.email || '',
         displayName: name.trim(),
         role: 'customer',
         customerProfile: {
-          addresses: [
-            {
-              label: 'Home',
-              street: street.trim(),
-              area: area.trim(),
-              city: city.trim(),
-              state: 'Maharashtra', // Default for now
-              pincode: pincode.trim(),
-              location: {
-                lat: location.lat,
-                lng: location.lng,
-                geohash,
-              },
-            },
-          ],
-          defaultAddressIndex: 0,
+          location,
         },
       });
 
       router.push('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating user:', err);
-      setError(err.message || 'Failed to create account. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create account';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -135,7 +122,7 @@ export default function CustomerRegistrationPage() {
       <div className="max-w-md mx-auto">
         <h2 className="text-2xl font-bold mb-2">Complete Your Profile</h2>
         <p className="text-gray-500 mb-6">
-          We need a few details to get you started
+          We need a few details to help you find nearby pharmacies
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -148,7 +135,7 @@ export default function CustomerRegistrationPage() {
           />
 
           <PhoneInput
-            label="Phone Number (optional)"
+            label="Phone Number"
             value={phone}
             onChange={setPhone}
           />
@@ -156,14 +143,22 @@ export default function CustomerRegistrationPage() {
           {/* Location */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Delivery Location
+              Your Location
             </label>
             {location ? (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-green-600" />
-                <span className="text-green-700 text-sm">
-                  Location captured successfully
-                </span>
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-green-700 font-medium">Location captured</span>
+                </div>
+                <p className="text-sm text-gray-600 line-clamp-2">{location.address}</p>
+                <button
+                  type="button"
+                  onClick={handleGetLocation}
+                  className="text-sm text-primary mt-2 hover:underline"
+                >
+                  Update location
+                </button>
               </div>
             ) : (
               <Button
@@ -177,36 +172,9 @@ export default function CustomerRegistrationPage() {
                 {locationLoading ? 'Getting location...' : 'Allow Location Access'}
               </Button>
             )}
-          </div>
-
-          <Input
-            label="Street Address"
-            placeholder="House no, Building, Street"
-            value={street}
-            onChange={(e) => setStreet(e.target.value)}
-          />
-
-          <Input
-            label="Area / Locality"
-            placeholder="Area name"
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="City"
-              placeholder="City"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-            />
-            <Input
-              label="Pincode"
-              placeholder="6-digit pincode"
-              value={pincode}
-              onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              maxLength={6}
-            />
+            <p className="text-xs text-gray-500 mt-1">
+              We use your location to find pharmacies near you
+            </p>
           </div>
 
           {error && (
@@ -218,7 +186,7 @@ export default function CustomerRegistrationPage() {
             className="w-full"
             size="lg"
             isLoading={loading}
-            disabled={!name.trim() || !location}
+            disabled={!name.trim() || !phone.trim() || !location}
           >
             Create Account
           </Button>

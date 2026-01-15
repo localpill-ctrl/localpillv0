@@ -71,3 +71,39 @@ export const getCurrentLocation = (): Promise<{ lat: number; lng: number }> => {
     );
   });
 };
+
+// Reverse geocode coordinates to address using OpenStreetMap Nominatim
+export const reverseGeocode = async (
+  lat: number,
+  lng: number
+): Promise<string> => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    );
+    const data = await response.json();
+    return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch {
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+};
+
+// Get current location with address
+export const getCurrentLocationWithAddress = async (): Promise<{
+  lat: number;
+  lng: number;
+  address: string;
+  geohash: string;
+}> => {
+  const coords = await getCurrentLocation();
+  const [address, geohash] = await Promise.all([
+    reverseGeocode(coords.lat, coords.lng),
+    Promise.resolve(calculateGeohash(coords.lat, coords.lng)),
+  ]);
+  return {
+    lat: coords.lat,
+    lng: coords.lng,
+    address,
+    geohash,
+  };
+};

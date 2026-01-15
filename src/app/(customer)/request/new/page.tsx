@@ -3,11 +3,10 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { createOrder } from '@/lib/firebase/firestore';
+import { createRequest } from '@/lib/firebase/firestore';
 import { uploadPrescriptionImage } from '@/lib/firebase/storage';
 import { RequestType } from '@/types';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import {
   ArrowLeft,
   Camera,
@@ -18,7 +17,7 @@ import {
   MapPin,
 } from 'lucide-react';
 
-type Step = 'type' | 'details' | 'address' | 'submitting';
+type Step = 'type' | 'details' | 'submitting';
 
 export default function NewRequestPage() {
   const router = useRouter();
@@ -33,11 +32,7 @@ export default function NewRequestPage() {
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
   // Text request
-  const [medicineRequest, setMedicineRequest] = useState('');
-  const [notes, setNotes] = useState('');
-
-  // Address
-  const [selectedAddressIndex, setSelectedAddressIndex] = useState(0);
+  const [medicineText, setMedicineText] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -68,12 +63,18 @@ export default function NewRequestPage() {
       return;
     }
 
+    const location = user.customerProfile?.location;
+    if (!location) {
+      setError('Location not found. Please update your profile.');
+      return;
+    }
+
     if (requestType === 'prescription' && images.length === 0) {
       setError('Please upload at least one prescription image');
       return;
     }
 
-    if (requestType === 'text' && !medicineRequest.trim()) {
+    if (requestType === 'text' && !medicineText.trim()) {
       setError('Please enter the medicine names');
       return;
     }
@@ -83,55 +84,46 @@ export default function NewRequestPage() {
     setError('');
 
     try {
-      const address = user.customerProfile?.addresses[selectedAddressIndex];
-      if (!address) {
-        throw new Error('No delivery address found');
-      }
-
-      // Create a temporary order ID for uploading images
-      const tempOrderId = `temp_${Date.now()}`;
+      // Create a temporary ID for uploading images
+      const tempId = `temp_${Date.now()}`;
 
       // Upload images if prescription type
       let prescriptionImageUrls: string[] = [];
       if (requestType === 'prescription') {
         prescriptionImageUrls = await Promise.all(
           images.map((file, index) =>
-            uploadPrescriptionImage(tempOrderId, file, index)
+            uploadPrescriptionImage(tempId, file, index)
           )
         );
       }
 
-      // Create order - only include defined fields (Firestore doesn't accept undefined)
-      const orderData: any = {
+      // Create request
+      const requestData: Parameters<typeof createRequest>[0] = {
         customerId: user.uid,
         customerName: user.displayName,
         customerPhone: user.phone,
         requestType: requestType!,
-        deliveryAddress: address,
-        status: 'pending',
-        broadcastRadius: 2,
-        notifiedPharmacies: [],
+        location,
+        status: 'active',
       };
 
       // Add optional fields only if they have values
       if (requestType === 'prescription' && prescriptionImageUrls.length > 0) {
-        orderData.prescriptionImageUrls = prescriptionImageUrls;
+        requestData.prescriptionImageUrls = prescriptionImageUrls;
       }
-      if (requestType === 'text' && medicineRequest.trim()) {
-        orderData.medicineRequest = medicineRequest.trim();
-      }
-      if (notes.trim()) {
-        orderData.notes = notes.trim();
+      if (requestType === 'text' && medicineText.trim()) {
+        requestData.medicineText = medicineText.trim();
       }
 
-      const orderId = await createOrder(orderData);
+      const requestId = await createRequest(requestData);
 
-      // Navigate to order tracking
-      router.push(`/orders/${orderId}`);
-    } catch (err: any) {
-      console.error('Error creating order:', err);
-      setError(err.message || 'Failed to create order. Please try again.');
-      setStep('address');
+      // Navigate to request detail page
+      router.push(`/request/${requestId}`);
+    } catch (err: unknown) {
+      console.error('Error creating request:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create request';
+      setError(errorMessage);
+      setStep('details');
     } finally {
       setLoading(false);
     }
@@ -146,22 +138,29 @@ export default function NewRequestPage() {
             onClick={() => {
               if (step === 'type') router.push('/dashboard');
               else if (step === 'details') setStep('type');
-              else if (step === 'address') setStep('details');
             }}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             disabled={step === 'submitting'}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-semibold">New Request</h1>
+          <h1 className="text-xl font-semibold">Find Medicine</h1>
         </div>
       </header>
 
       <main className="px-6 py-6">
+        {/* Location indicator */}
+        {user?.customerProfile?.location && step !== 'submitting' && (
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-6 p-3 bg-gray-50 rounded-lg">
+            <MapPin className="w-4 h-4" />
+            <span className="truncate">{user.customerProfile.location.address}</span>
+          </div>
+        )}
+
         {/* Step 1: Choose Type */}
         {step === 'type' && (
           <div>
-            <h2 className="text-2xl font-bold mb-2">How would you like to order?</h2>
+            <h2 className="text-2xl font-bold mb-2">How would you like to search?</h2>
             <p className="text-gray-500 mb-8">
               Choose the method that works best for you
             </p>
@@ -210,7 +209,7 @@ export default function NewRequestPage() {
           </div>
         )}
 
-        {/* Step 2: Enter Details */}
+        {/* Step 2: Enter Details - Prescription */}
         {step === 'details' && requestType === 'prescription' && (
           <div>
             <h2 className="text-2xl font-bold mb-2">Upload Prescription</h2>
@@ -256,99 +255,39 @@ export default function NewRequestPage() {
               )}
             </div>
 
-            <Input
-              label="Additional Notes (Optional)"
-              placeholder="Any special instructions..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
             <Button
-              className="w-full mt-6"
+              className="w-full"
               size="lg"
-              onClick={() => setStep('address')}
+              onClick={handleSubmit}
               disabled={images.length === 0}
+              isLoading={loading}
             >
-              Continue
+              Find Pharmacies
             </Button>
           </div>
         )}
 
+        {/* Step 2: Enter Details - Text */}
         {step === 'details' && requestType === 'text' && (
           <div>
             <h2 className="text-2xl font-bold mb-2">What do you need?</h2>
             <p className="text-gray-500 mb-6">
-              Type the medicine names or describe what you need
+              Type the medicine names you&apos;re looking for
             </p>
 
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Medicine Request *
+                Medicine Names *
               </label>
               <textarea
-                value={medicineRequest}
-                onChange={(e) => setMedicineRequest(e.target.value)}
-                placeholder="e.g., Paracetamol 500mg (10 tablets), Crocin, Vitamin D..."
+                value={medicineText}
+                onChange={(e) => setMedicineText(e.target.value)}
+                placeholder="e.g., Paracetamol 500mg, Crocin, Vitamin D..."
                 rows={4}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
               />
-            </div>
-
-            <Input
-              label="Additional Notes (Optional)"
-              placeholder="Any special instructions..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-
-            <Button
-              className="w-full mt-6"
-              size="lg"
-              onClick={() => setStep('address')}
-              disabled={!medicineRequest.trim()}
-            >
-              Continue
-            </Button>
-          </div>
-        )}
-
-        {/* Step 3: Confirm Address */}
-        {step === 'address' && (
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Delivery Address</h2>
-            <p className="text-gray-500 mb-6">
-              Confirm your delivery location
-            </p>
-
-            <div className="space-y-3 mb-6">
-              {user?.customerProfile?.addresses.map((address, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedAddressIndex(index)}
-                  className={`w-full p-4 border-2 rounded-xl text-left transition-colors ${
-                    selectedAddressIndex === index
-                      ? 'border-primary bg-primary-light/30'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <MapPin className={`w-5 h-5 mt-0.5 ${
-                      selectedAddressIndex === index ? 'text-primary-dark' : 'text-gray-400'
-                    }`} />
-                    <div>
-                      <p className="font-medium">{address.label}</p>
-                      <p className="text-sm text-gray-500">
-                        {[address.street, address.area, address.city]
-                          .filter(Boolean)
-                          .join(', ')}
-                      </p>
-                      {address.pincode && (
-                        <p className="text-sm text-gray-400">{address.pincode}</p>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
             </div>
 
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
@@ -357,14 +296,15 @@ export default function NewRequestPage() {
               className="w-full"
               size="lg"
               onClick={handleSubmit}
+              disabled={!medicineText.trim()}
               isLoading={loading}
             >
-              Submit Request
+              Find Pharmacies
             </Button>
           </div>
         )}
 
-        {/* Step 4: Submitting */}
+        {/* Submitting State */}
         {step === 'submitting' && (
           <div className="text-center py-12">
             <div className="w-20 h-20 mx-auto mb-6 bg-primary-light rounded-full flex items-center justify-center">
