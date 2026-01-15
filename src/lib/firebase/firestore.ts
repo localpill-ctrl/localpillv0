@@ -101,6 +101,9 @@ export const setPharmacyOnlineStatus = async (
 export const createRequest = async (
   requestData: Omit<MedicineRequest, 'requestId' | 'createdAt' | 'expiresAt' | 'responseCount'>
 ): Promise<string> => {
+  console.log('=== createRequest Debug ===');
+  console.log('Input data:', requestData);
+
   const requestsRef = collection(db, 'requests');
   const docRef = await addDoc(requestsRef, {
     ...requestData,
@@ -108,6 +111,8 @@ export const createRequest = async (
     createdAt: serverTimestamp(),
     expiresAt: Timestamp.fromDate(new Date(Date.now() + 60 * 60 * 1000)), // 1 hour
   });
+
+  console.log('Created request with ID:', docRef.id);
 
   // Update global stats
   await updateGlobalStats({ totalRequests: 1, activeRequests: 1 });
@@ -192,10 +197,18 @@ export const subscribeToNearbyRequests = (
   return onSnapshot(
     q,
     (snapshot) => {
+      console.log('=== subscribeToNearbyRequests Debug ===');
+      console.log('Total active requests found:', snapshot.docs.length);
+
       const requests: MedicineRequest[] = [];
 
       snapshot.docs.forEach((doc) => {
         const request = { requestId: doc.id, ...doc.data() } as MedicineRequest;
+        console.log('Request:', request.requestId, {
+          status: request.status,
+          hasLocation: !!request.location,
+          location: request.location,
+        });
 
         // Filter by distance client-side
         if (request.location?.lat && request.location?.lng) {
@@ -204,9 +217,15 @@ export const subscribeToNearbyRequests = (
             [request.location.lat, request.location.lng]
           );
 
+          console.log(`Distance to request ${request.requestId}: ${distance.toFixed(2)}km (limit: ${BROADCAST_RADIUS_KM}km)`);
+
           if (distance <= BROADCAST_RADIUS_KM) {
             requests.push(request);
+          } else {
+            console.log(`Request ${request.requestId} filtered out - too far`);
           }
+        } else {
+          console.log(`Request ${request.requestId} filtered out - missing location`);
         }
       });
 

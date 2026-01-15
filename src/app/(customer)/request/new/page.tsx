@@ -107,6 +107,10 @@ export default function NewRequestPage() {
         status: 'active',
       };
 
+      console.log('=== Creating Request Debug ===');
+      console.log('Request Data:', requestData);
+      console.log('Location:', location);
+
       // Add optional fields only if they have values
       if (requestType === 'prescription' && prescriptionImageUrls.length > 0) {
         requestData.prescriptionImageUrls = prescriptionImageUrls;

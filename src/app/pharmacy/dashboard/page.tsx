@@ -60,7 +60,14 @@ export default function PharmacyDashboard() {
 
   // Subscribe to nearby requests when online
   useEffect(() => {
+    console.log('=== Pharmacy Dashboard Debug ===');
+    console.log('User:', user?.uid);
+    console.log('Pharmacy Profile:', user?.pharmacyProfile);
+    console.log('Is Online:', isOnline);
+    console.log('Has Location:', !!user?.pharmacyProfile?.location);
+
     if (!user?.pharmacyProfile?.location || !isOnline) {
+      console.log('Not subscribing - missing location or offline');
       setNearbyRequests([]);
       setLoading(false);
       return;
@@ -70,6 +77,7 @@ export default function PharmacyDashboard() {
     const pharmacyLng = user.pharmacyProfile.location.lng;
 
     console.log('Subscribing to nearby requests at:', pharmacyLat, pharmacyLng);
+    console.log('Search radius: 2km');
 
     const unsubscribe = subscribeToNearbyRequests(
       pharmacyLat,

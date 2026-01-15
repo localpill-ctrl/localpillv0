@@ -23,14 +23,14 @@ export const getGeohashBounds = (
 };
 
 // Calculate distance between two points in kilometers
+// Note: distanceBetween from geofire-common already returns kilometers
 export const calculateDistance = (
   lat1: number,
   lng1: number,
   lat2: number,
   lng2: number
 ): number => {
-  const distanceMeters = distanceBetween([lat1, lng1], [lat2, lng2]);
-  return distanceMeters / 1000; // Convert to km
+  return distanceBetween([lat1, lng1], [lat2, lng2]);
 };
 
 // Check if a point is within radius
