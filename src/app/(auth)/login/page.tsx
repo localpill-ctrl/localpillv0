@@ -85,7 +85,7 @@ export default function LoginPage() {
       <div className="flex justify-center mb-8">
         <Image
           src="/logo.png"
-          alt="LocalPill"
+          alt="Where is My Medicine"
           width={150}
           height={60}
           className="h-14 w-auto"
@@ -96,7 +96,7 @@ export default function LoginPage() {
       <div className="max-w-md mx-auto">
         <h2 className="text-2xl font-bold text-center mb-2">Welcome Back</h2>
         <p className="text-gray-500 text-center mb-8">
-          Sign in to continue to LocalPill
+          Sign in to continue to Where is My Medicine
         </p>
 
         {error && (
