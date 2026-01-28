@@ -51,7 +51,7 @@ export default function RegisterPage() {
 
       <div className="max-w-md mx-auto">
         <h2 className="text-2xl font-bold text-center mb-2">
-          How do you want to use LocalPill?
+          How do you want to use Where is My Medicine?
         </h2>
         <p className="text-gray-500 text-center mb-8">
           Select the option that best describes you
@@ -90,7 +90,7 @@ export default function RegisterPage() {
                 <h3 className="font-semibold text-lg">I own a pharmacy</h3>
                 <p className="text-gray-500 text-sm mt-1">
                   Receive orders from customers in your area. Grow your business
-                  with LocalPill.
+                  with Where is My Medicine.
                 </p>
               </div>
             </div>
