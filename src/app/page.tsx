@@ -169,7 +169,7 @@ export default function LandingPage() {
             +91 93303 74330
           </a>
         </div>
-        <p className="text-gray-400 text-sm">Where is My Medicine - Find medicine near you</p>
+        <p className="text-gray-400 text-sm"> © Where is My Medicine. All rights reserved. </p>
       </footer>
     </div>
   );
