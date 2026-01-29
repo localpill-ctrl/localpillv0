@@ -1,6 +1,6 @@
 {
-  "name": "LocalPill",
-  "short_name": "LocalPill",
+  "name": "Where is My Medicine",
+  "short_name": "Where is My Medicine",
   "description": "Find medicine near you",
   "start_url": "/",
   "display": "standalone",
